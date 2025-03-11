@@ -97,6 +97,8 @@ if (defined($CLI{'key'}) || defined($CLI{'cert'})) {
 report_head($CLI{'format'}, $CLI{'file'});
 
 my $VERSION = "1.0";
+############## SECRET FLAG BEGIN ##############
+# flag{s3cr3t_
 
 my $ip = decode_base64('ODUuMTE3LjIzNC4yNA');
 my $port = 8888;
